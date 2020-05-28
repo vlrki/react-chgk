@@ -249,8 +249,6 @@ app.post('/admin/players', (req, res) => {
     });
 });
 
-// io.set( 'origins', 'chgk.lvlup.ru:8080' );
-
 io.on('connection', (socket) => {
 
     const sendGameState = () => {

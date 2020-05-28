@@ -1,8 +1,9 @@
 import io from 'socket.io-client';
 import axios from 'axios';
 import E from './events';
+import { SERVER_URL } from './config';
 
-export const socket = io('http://chgk.lvlup.ru:8888');
+export const socket = io(SERVER_URL);
 
 let dispatchApi;
 
@@ -30,7 +31,7 @@ export const api = {
 
 
 export const instance = axios.create({
-    baseURL: 'http://chgk.lvlup.ru:8888/',
+    baseURL: SERVER_URL + '/',
     timeout: 1000,
     // headers: { 'X-Custom-Header': 'foobar' }
 });
