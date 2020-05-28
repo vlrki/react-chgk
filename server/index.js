@@ -4,7 +4,7 @@ const server = require('http').Server(app);
 const io = require('socket.io')(server);
 const crypto = require('crypto');
 
-const E = require('../chgk-client/src/events');
+const E = require('../client/src/events');
 console.log(E);
 
 app.use(express.json());
