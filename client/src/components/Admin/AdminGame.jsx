@@ -16,6 +16,7 @@ export default function AdminGame({ socket }) {
     const [answers, setAnswers] = useState([]);
     const [counter, setCounter] = useState(60);
     const [timerStarted, setTimerStarted] = useState(false);
+    const [additionalTime, setAdditionalTime] = useState(false);
     const [showNextButton, setShowNextButton] = useState(true);
     const [results, setResults] = useState([]);
     const [showResults, setShowResults] = useState(false);
@@ -33,6 +34,7 @@ export default function AdminGame({ socket }) {
             console.log(E.GAME_TIMER_STATE);
 
             setCounter(data.counter);
+            setAdditionalTime(data.additionalTime);
         }
 
         const onTimerStopedHandler = (data) => {
@@ -106,6 +108,15 @@ export default function AdminGame({ socket }) {
         setTimerStarted(true);
     };
 
+    const onTimerStopHandler = () => {
+        console.log(E.GAME_TIMER_STOP);
+        socket.emit(E.GAME_TIMER_STOP);
+
+        setAdditionalTime(false);
+
+        // setTimerStarted(false);
+    };
+
     const onNextQuestionHandler = () => {
         console.log(E.GAME_NEXT_QUESTION);
         socket.emit(E.GAME_NEXT_QUESTION);
@@ -133,11 +144,11 @@ export default function AdminGame({ socket }) {
         <div className="container">
             <div className="pt-5">
                 <div className="row">
-                    <div className="col-md-8">
+                    <div className="col-md-9">
                         <h1>Пульт управления ЧГК</h1>
                         { /*<p>Игра активна <a href="#">(выйти)</a></p>*/}
                     </div>
-                    <div className="col-md-4">
+                    <div className="col-md-3">
                         <button type="button" className="btn btn-lg btn-block btn-primary" onClick={onGameStartHandler}>Создать новую игру</button>
                     </div>
                 </div>
@@ -149,11 +160,11 @@ export default function AdminGame({ socket }) {
                             <div className="col-md-2">
 
                             </div>
-                            <div className="col-md-6">
+                            <div className="col-md-7">
 
                             </div>
-                            <div className="col-md-4 text-center">
-                                <div className="counter">{counter == 60 ? '1:00' : (counter > 9 ? counter : '0' + counter)}</div>
+                            <div className="col-md-3 text-center">
+                                <div className={"counter" + (additionalTime ? " additional" : "")}>{counter == 60 ? '1:00' : (counter > 9 ? counter : '0' + counter)}</div>
                             </div>
                         </div>
 
@@ -161,15 +172,23 @@ export default function AdminGame({ socket }) {
                             <div className="col-md-2">
                                 <h3>Раунд:</h3>
                             </div>
-                            <div className="col-md-6">
+                            <div className="col-md-7">
                                 <Rounds rounds={rounds} round={round} />
                             </div>
                             {timerStarted ||
-                                <div className="col-md-4">
+                                <div className="col-md-3">
                                     <button
                                         type="button"
                                         className="btn btn-block btn-warning pull-right"
-                                        onClick={onTimerStartHandler}>Начать отсчёт времени</button>
+                                        onClick={onTimerStartHandler}>Включить таймер</button>
+                                </div>
+                            }
+                            {!timerStarted ||
+                                <div className="col-md-3">
+                                    <button
+                                        type="button"
+                                        className="btn btn-block btn-danger pull-right"
+                                        onClick={onTimerStopHandler}>Остановить таймер</button>
                                 </div>
                             }
                         </div>
@@ -178,23 +197,23 @@ export default function AdminGame({ socket }) {
                             <div className="col-md-2">
                                 <h3>Вопрос:</h3>
                             </div>
-                            <div className="col-md-6">
-                                <Questions questions={questions} question={question} showResults={showResults} />
+                            <div className="col-md-7">
+                                <Questions questions={questions} question={question} round={round} showResults={showResults} />
                             </div>
-                            <div className="col-md-4">
+                            <div className="col-md-3">
                                 {showNextButton && !showResults && question == 11 &&
                                     <button
                                         type="button"
                                         className="btn btn-block btn-secondary pull-right"
                                         onClick={onShowResultsHandler}
-                                    >Перейти к результатам</button>
+                                    >К результатам</button>
                                 }
                                 {(showNextButton && question !== 11 || showResults) && !(round == 2 && question == 11) &&
                                     <button
                                         type="button"
                                         className="btn btn-block btn-secondary pull-right"
                                         onClick={onNextQuestionHandler}
-                                    >Перейти к следующему вопросу</button>
+                                    >Следующий вопрос</button>
                                 }
                             </div>
                         </div>

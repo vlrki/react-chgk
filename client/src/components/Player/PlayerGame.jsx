@@ -15,6 +15,7 @@ export default function PlayerGame({ socket }) {
     const [answer, setAnswer] = useState('');
     const [player, setPlayerData] = useState({ playerId: '', playerName: '' });
     const [counter, setCounter] = useState(0);
+    const [additionalTime, setAdditionalTime] = useState(false);
     const [results, setResults] = useState([]);
     const [showResults, setShowResults] = useState(false);
 
@@ -31,7 +32,17 @@ export default function PlayerGame({ socket }) {
             console.log(E.GAME_TIMER_STATE);
 
             setCounter(data.counter);
+            setAdditionalTime(data.additionalTime);
         }
+
+        const onTimerStopHandler = () => {
+            console.log(E.GAME_TIMER_STOP);
+            socket.emit(E.GAME_TIMER_STOP);
+    
+            setAdditionalTime(false);
+    
+            // setTimerStarted(false);
+        };
 
         const onGameStateHandler = (data) => {
             console.log(E.GAME_TIMER_STATE);
@@ -96,7 +107,7 @@ export default function PlayerGame({ socket }) {
                         <p>{player.playerId && `Команда №${player.playerId} (${player.playerName})`}{/* <a href="#">(выйти)</a>*/}</p>
                     </div>
                     <div className="col-md-4 text-center">
-                        <div className="counter">{counter == 60 ? '1:00' : (counter > 9 ? counter : '0' + counter)}</div>
+                        <div className={"counter" + (additionalTime ? " additional" : "")}>{counter == 60 ? '1:00' : (counter > 9 ? counter : '0' + counter)}</div>
                     </div>
                 </div>
             </div>
@@ -121,7 +132,7 @@ export default function PlayerGame({ socket }) {
                             </div>
                             <div className="col-md-10">
                                 <nav aria-label="Page navigation example">
-                                    <Questions questions={questions} question={question} showResults={showResults} />
+                                    <Questions questions={questions} question={question} round={round} showResults={showResults} />
                                 </nav>
                             </div>
                         </div>
