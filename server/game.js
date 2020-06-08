@@ -106,7 +106,7 @@ let game = {
     nextQuestion() {
         //TODO
         if (this._state.currentQuestion < 11 && this._state.currentRound <= 2) {
-            state.currentQuestion++;
+            this._state.currentQuestion++;
         } else if (this._state.currentQuestion == 11 && this._state.currentRound < 2) {
             this._state.currentQuestion = 0;
             this._state.currentRound++;
