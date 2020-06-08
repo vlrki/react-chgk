@@ -14,8 +14,6 @@ export default function AdminLogin({ onLogin }) {
             password
         });
 
-        console.log(response);
-
         onLogin({ token: response.data.token });
         return <Redirect to={"/admin/game"} push /> 
     }
@@ -28,7 +26,7 @@ export default function AdminLogin({ onLogin }) {
                     <div className="col-md-12">
                         <form className="form-signin">
                             <h1 className="h3 mb-3 font-weight-normal text-center">Войдите</h1>
-                            <label for="inputLogin" className="sr-only">Логин</label>
+                            <label htmlFor="inputLogin" className="sr-only">Логин</label>
                             <input
                                 type="text"
                                 id="inputLogin"
@@ -39,7 +37,7 @@ export default function AdminLogin({ onLogin }) {
                                 value={login}
                                 onChange={(e) => setLogin(e.target.value)}
                             />
-                            <label for="inputPassword" className="sr-only">Пароль</label>
+                            <label htmlFor="inputPassword" className="sr-only">Пароль</label>
                             <input
                                 type="password"
                                 id="inputPassword"

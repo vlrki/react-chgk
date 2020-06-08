@@ -66,13 +66,10 @@ function App({history}) {
         history.push('/admin/game');
     }
 
-    console.log(state);
-
     return (
         <div className="App">
             <Switch>
                 <Route path='/admin/game' render={() => {
-                    console.log(state.isAdmin);
                     return <>
                         {!state.isAdmin && <Redirect to='/admin' />}
                         {state.isAdmin && <AdminGame 

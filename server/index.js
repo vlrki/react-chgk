@@ -5,11 +5,15 @@ const io = require('socket.io')(server);
 const crypto = require('crypto');
 
 const E = require('../client/src/events');
-console.log(E);
+const C = require('./config');
+const G = require('./game');
+const U = require('./users');
+
+G.init();
 
 app.use(express.json());
 
-app.use(function(req, res, next) {
+app.use(function (req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Headers", "X-Requested-With");
     res.header("Access-Control-Allow-Headers", "Content-Type");
@@ -17,181 +21,42 @@ app.use(function(req, res, next) {
     next();
 });
 
-const liguePlayers = {
-    1: 'Костыль',
-    2: 'Ашот из Алупки', 
-    3: 'Псионики', 
-    4: 'Бутылка брома', 
-    5: 'Old school', 
-    6: 'Один за всех и все за Одина', 
-    7: 'Мимо проходили'
-}
-
+//TODO Сделать массив токенов
 let admin = {
-    login: 'admin123',
-    password: 'admin123',
+    login: C.ADMIN_LOGIN,
+    password: C.ADMIN_PASSWORD,
     token: '',
     socket: ''
 };
 
-const players = new Map();
+// const players = new Map();
 
 
 let initialState = {
-    active: false,
-    players: [],
-    currentRound: 0,
-    currentQuestion: 0,
-    waitingForAnswers: true,
-    answers: [],
-    showResults: false,
-    results: {},
-    finishDt: null
+    // active: false,
+    players: new Map(),
+    // currentRound: 0,
+    // currentQuestion: 0,
+    waitingForAnswers: false,
+    additionalTime: false,
+    // answers: [],
+    // showResults: false,
+    // results: {},
+    // finishDt: null,
+    counterId: null
 };
 
 getPlayersList = () => {
     let playersList = [];
 
-    players.forEach(function (value, key, map) {
-        playersList.push({ id: value, name: liguePlayers[value] });
+    state.players.forEach(function (value, key, map) {
+        playersList.push({ id: value, name: U.getUser(value).name });
     });
 
     return playersList;
 }
 
-initialState.answers = Array.from({ length: 3 }, (el, index) => Array.from({ length: 12 }, (el, index) => []));
-
-// initialState.answers[0][0][1] = {
-//     playerId: 1,
-//     playerName: 'Снежинки',
-//     answer: 'blabla',
-//     dt: '2020-05-27 12:12:12',
-//     active: true,
-//     accepted: null
-// };
-
-// initialState.answers[0][0][2] = {
-//     playerId: 2,
-//     playerName: 'Зайчики',
-//     answer: 'blasdfsdfbla dsfsdf',
-//     dt: '2020-05-27 12:12:13',
-//     active: true,
-//     accepted: true
-// };
-
-// initialState.answers[0][1][2] = {
-//     playerId: 2,
-//     playerName: 'Дримтим',
-//     answer: 'qweqwe er',
-//     dt: '2020-05-27 12:12:15',
-//     active: false,
-//     accepted: null
-// };
-// initialState.answers[0][4][2] = {
-//     playerId: 2,
-//     playerName: 'Снежинки',
-//     answer: 'blabla',
-//     dt: '2020-05-27 12:12:12',
-//     active: true,
-//     accepted: true
-// };
-
-// initialState.answers[1][5][2] = {
-//     playerId: 2,
-//     playerName: 'Снежинки',
-//     answer: 'blabla',
-//     dt: '2020-05-27 12:12:12',
-//     active: true,
-//     accepted: true
-// };
-
-// initialState.answers[2][6][3] = {
-//     playerId: 3,
-//     playerName: 'Дримтим',
-//     answer: 'qweqwe er',
-//     dt: '2020-05-27 12:12:15',
-//     active: false,
-//     accepted: true
-// };
-
-// initialState.answers[2][7][3] = {
-//     playerId: 3,
-//     playerName: 'Дримтим',
-//     answer: 'qweqwe er',
-//     dt: '2020-05-27 12:12:15',
-//     active: false,
-//     accepted: true
-// };
-
 state = { ...initialState };
-
-getResults = () => {
-    let a = [];
-    let b = [];
-
-
-    state.answers.forEach((value, round) => {
-
-        a[round] = [];
-
-        value.forEach((value, question) => {
-            a[round][question] = [];
-
-            value.forEach((value, player) => {
-
-                a[round][question][player] = value.accepted ? 1 : 0;
-
-                if (b[player] == undefined) {
-                    b[player] = {
-                        playerId: player,
-                        playerName: liguePlayers[player],
-                        results: {}
-                    }
-                    b[player].results = { 0: 0, 1: 0, 2: 0, total: 0 };
-                    b[player].results[round] = 0;
-                }
-
-                if (value.accepted) {
-                    b[player].results[round]++;
-                }
-
-            });
-        });
-    });
-
-    b.forEach((value, player) => {
-        for (round in value.results) {
-            if (round == 'total' || round > state.currentRound)
-                return;
-
-            b[player].results.total += value.results[round];
-        }
-    });
-
-    console.log('results', b);
-
-    function compareByTotal(a, b) {
-        if (a.results.total < b.results.total) {
-            return 1;
-        }
-
-        if (a.results.total > b.results.total) {
-            return -1;
-        }
-
-        return 0;
-    }
-
-    b.sort(compareByTotal);
-
-    // console.log('results', b);
-
-    return b;
-}
-
-// getResults();
-
-// console.log(state.answers);
 
 app.get('/', (request, response) => {
     console.log('get');
@@ -204,30 +69,20 @@ app.post('/join', (req, res) => {
     console.log(req.body);
 
     const { playerId } = req.body
-    console.log(playerId);
 
     console.log('Join');
-    console.log(players);
     res.json({
-        players: [...players.keys()]
-    });
-});
-
-app.post('/state', (req, res) => {
-    console.log('state');
-    res.json({
-        state: []
+        players: [...state.players.keys()]
     });
 });
 
 app.post('/admin/login', (req, res) => {
     console.log('Login');
-    console.log(req.body);
 
     const { login, password } = req.body
 
     if (admin.login !== login || admin.password !== password) {
-        return
+        return;
     };
 
     admin.token = crypto.randomBytes(64).toString('hex');
@@ -251,42 +106,59 @@ app.post('/admin/players', (req, res) => {
 
 io.on('connection', (socket) => {
 
-    const sendGameState = () => {
-        console.log(sendGameState);
+    const sendAdminGameState = () => {
+        console.log('sendAdminGameState');
+        console.log({
+            ...G.getAdminState(),
+            waitingForAnswers: state.waitingForAnswers,
+            additionalTime: state.additionalTime,
+            players: getPlayersList()
+        });
 
-        io.emit(E.GAME_STATE, {
-            currentRound: state.currentRound,
-            currentQuestion: state.currentQuestion,
-            showResults: state.showResults,
-            answers: state.answers,
-            results: getResults()
+        io.to(admin.socket).emit(E.A_GAME_STATE, {
+            ...G.getAdminState(),
+            waitingForAnswers: state.waitingForAnswers,
+            additionalTime: state.additionalTime,
+            players: getPlayersList()
         });
     }
+
+    const sendAdminAnswers = () => {
+        io.to(admin.socket).emit(E.ADMIN_ANSWERS, {
+            answers: G.getAnswers()
+        });
+    }
+
+    const sendPlayerGameState = () => {
+        console.log('sendPlayerGameState');
+
+        io.emit(E.GAME_STATE, {
+            ...G.getPlayerState(),
+            waitingForAnswers: state.waitingForAnswers,
+            additionalTime: state.additionalTime,
+        });
+    }
+
 
     socket.on(E.PLAYER_JOINED, ({ playerId }) => {
         console.log(E.PLAYER_JOINED);
         socket.join(playerId);
 
-        players.set(socket.id, playerId);
-        sendGameState();
+        state.players.set(socket.id, playerId);
 
-        let playerName = liguePlayers[playerId];
-
+        let player = U.getUser(playerId);
 
         io.to(socket.id).emit(E.PLAYER_DATA, {
             playerId,
-            playerName
+            playerName: player.name
         });
 
-        io.to(admin.socket).emit(E.ADMIN_PLAYERS_LIST, getPlayersList());
-
-        console.log(getPlayersList());
+        sendPlayerGameState()
+        sendAdminGameState();
     });
 
     socket.on(E.ADMIN_AUTH, ({ token }) => {
         console.log(E.ADMIN_AUTH);
-        console.log(token);
-        console.log(admin.token);
 
         if (token !== admin.token) {
             console.log('error');
@@ -295,39 +167,32 @@ io.on('connection', (socket) => {
 
         admin.socket = socket.id;
 
-        sendGameState();   
+        sendAdminGameState();
     });
 
     socket.on(E.GAME_START, () => {
         console.log(E.GAME_STARTED);
-        console.log(socket.id);
-        console.log(admin.socket);
 
         if (socket.id != admin.socket) {
             console.log('error');
             return;
         }
 
+        G.init();
+
         state = {
-            active: false,
-            players: [],
-            currentRound: 0,
-            currentQuestion: 0,
             waitingForAnswers: true,
-            answers: [],
-            showResults: false,
-            results: {},
-            finishDt: null
+            additionalTime: false,
+            counterId: null
         };
 
         io.emit(E.GAME_STARTED);
-        sendGameState();
+
+        sendPlayerGameState();
     });
 
     socket.on(E.GAME_TIMER_START, () => {
         console.log(E.GAME_TIMER_START);
-        console.log(socket.id);
-        console.log(admin.socket);
 
         if (socket.id != admin.socket) {
             console.log('error');
@@ -336,67 +201,103 @@ io.on('connection', (socket) => {
 
         counter = 60;
 
-        conterId = setInterval(() => {
-            console.log(counter);
+        G.set('waitingForAnswers', true);
+        G.set('additionalTime', false);
 
-            if (counter-- === 0) {
-                clearInterval(conterId);
+        state.conterId = setInterval(() => {
+            if (0 > counter) {
 
-                // Ждём три дополнительных секунды для получения ответов от всех
-                setTimeout(() => {
-                    state.waitingForAnswers = false;
-                    io.emit(E.GAME_TIMER_STOPED);
-                }, 3000);
+                additionalCounter = 10;
+                G.set('additionalTime', true);
+
+                clearInterval(state.conterId);
+
+                // Дополнительные 10 секунд дополнительных секунды для получения ответов от всех
+                state.conterId = setInterval(() => {
+
+                    if (0 > additionalCounter) {
+                        clearInterval(state.conterId);
+                        G.set('waitingForAnswers', false);
+                        G.set('additionalTime', false);
+
+                        io.emit(E.GAME_TIMER_STOPED);
+                    } else {
+                        io.emit(E.GAME_TIMER_STATE, {
+                            counter: additionalCounter,
+                            waitingForAnswers: G.get('waitingForAnswers'),
+                            additionalTime: G.get('additionalTime') 
+                        }); 
+                    }
+
+                    additionalCounter--;
+                }, 1000);
+
+
             } else {
-                io.emit(E.GAME_TIMER_STATE, { counter });
+                io.emit(E.GAME_TIMER_STATE, {
+                    counter,
+                    waitingForAnswers: G.get('waitingForAnswers'),
+                    additionalTime: G.get('additionalTime')
+                });
             }
-        }, 1000);
 
-        state.waitingForAnswers = true;
+            counter--;
+        }, 1000);
     });
 
-    socket.on(E.GAME_NEXT_QUESTION, () => {
-        console.log(E.GAME_NEXT_QUESTION);
-        console.log(socket.id);
-        console.log(admin.socket);
-
-        state.waitingForAnswers = true;
-        state.showResults = false;
+    socket.on(E.GAME_TIMER_STOP, () => {
+        console.log(E.GAME_TIMER_STOP);
 
         if (socket.id != admin.socket) {
             console.log('error');
             return;
         }
 
+        clearInterval(state.conterId);
 
-        if (state.currentQuestion < 11 && state.currentRound <= 2) {
-            state.currentQuestion++;
-        } else if (state.currentQuestion == 11 && state.currentRound < 2) {
-            state.currentQuestion = 0;
-            state.currentRound++;
-        } else if (state.currentQuestion == 11 && state.currentRound == 2) {
+        G.set('waitingForAnswers', false);
+        G.set('additionalTime', false);
+
+        io.emit(E.GAME_TIMER_STOPED);
+    });
+
+    socket.on(E.GAME_NEXT_QUESTION, () => {
+        console.log(E.GAME_NEXT_QUESTION);
+
+        G.set('waitingForAnswers', true);
+        G.set('showResults', false);
+
+        if (socket.id != admin.socket) {
+            console.log('error');
+            return;
+        }
+
+        //TODOacceptAnswer
+        if (G.getQuestion() < 11 && G.getRound() <= 2) {
+            G.nextQuestion();
+        } else if (G.getQuestion() == 11 && G.getRound() < 2) {
+            G.getQuestion();
+            // G.nextRound();
+        } else if (G.getQuestion() == 11 && G.getRound() == 2) {
             io.emit(E.GAME_FINISHED);
         }
 
-        sendGameState();
-
-        console.log(state);
+        sendAdminGameState();
+        sendPlayerGameState();
     });
 
     socket.on(E.ADMIN_SHOW_RESULTS, () => {
         console.log(E.ADMIN_SHOW_RESULTS);
 
-        state.showResults =  true;
+        state.showResults = true;
 
-        let results = getResults();
+        let results = G.getResults();
 
         io.emit(E.GAME_RESULTS, { results });
     });
 
     socket.on(E.GAME_FINISH, () => {
         console.log(E.GAME_FINISHED);
-        console.log(socket.id);
-        console.log(admin.socket);
 
         if (socket.id != admin.socket) {
             console.log('error');
@@ -409,73 +310,65 @@ io.on('connection', (socket) => {
 
     socket.on(E.PLAYER_SENT_ANSWER, ({ answer }) => {
         console.log(E.PLAYER_SENT_ANSWER);
-        console.log(answer);
 
-        let playerId = players.get(socket.id);
-        let playerName = liguePlayers[playerId];
+        let playerId = state.players.get(socket.id);
+        let player = U.getUser(playerId);
         let dt = new Date().toISOString().slice(0, 19).replace('T', ' ');
-        let active = state.waitingForAnswers;
+        let active = G.get('waitingForAnswers');
 
-        if (!state.answers[state.currentRound][state.currentQuestion][playerId]) {
-            state.answers[state.currentRound][state.currentQuestion][playerId] = {
-                playerId, playerName, answer, dt, active, accepted: null
-            };
-        } else {
+        if (!G.setAnswer({
+            playerId,
+            playerName: player.name,
+            answer,
+            dt,
+            active,
+            accepted: null
+        })) {
             //TODO: сообщение: Ответ уже получен
         }
 
-        io.to(admin.socket).emit(E.ADMIN_ANSWERS, {
-            answers: state.answers
-        });
+        sendAdminGameState();
     });
 
-    socket.on(E.ADMIN_ACCEPT_ANSWER, ({ playerId }) => {
+    socket.on(E.ADMIN_ACCEPT_ANSWER, ({ playerId, round, question }) => {
         console.log(E.ADMIN_ACCEPT_ANSWER);
-        console.log(playerId); 
 
-        state.answers[state.currentRound][state.currentQuestion][playerId].accepted = true;
+        G.acceptAnswer(playerId, round, question);
 
-        io.to(admin.socket).emit(E.ADMIN_ANSWERS, {
-            answers: state.answers
-        });
+        sendAdminAnswers();
     });
 
-    socket.on(E.ADMIN_REJECT_ANSWER, ({ playerId }) => {
+    socket.on(E.ADMIN_REJECT_ANSWER, ({ playerId, round, question }) => {
         console.log(E.ADMIN_REJECT_ANSWER);
-        console.log(playerId);
 
-        state.answers[state.currentRound][state.currentQuestion][playerId].accepted = false;
+        G.rejectAnswer(playerId, round, question);
 
-        io.to(admin.socket).emit(E.ADMIN_ANSWERS, {
-            answers: state.answers
-        });
+        sendAdminAnswers();
     });
 
-    socket.on('disconnect', () => {
+    const onDisconnect = () => () => {
         console.log(E.PLAYER_QUITED);
 
-        if (players.has(socket.id)) {
-            players.delete(socket.id);
+        if (state.players.has(socket.id)) {
+            state.players.delete(socket.id);
         }
-
-        console.log(players);
 
         io.to(admin.socket).emit(E.ADMIN_PLAYERS_LIST, getPlayersList());
 
         io.emit('user disconnected');
-    });
+    }
+
+    socket.on('disconnect', onDisconnect);
 
     console.log('socket connected');
 });
 
 
 
-server.listen(8888, (err) => {
+server.listen(C.SERVER_PORT, (err) => {
     if (err) {
         throw Error(err);
     }
 
     console.log('Server started');
 });
-
-//

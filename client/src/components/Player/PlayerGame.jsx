@@ -14,7 +14,8 @@ export default function PlayerGame({ socket }) {
     const [question, setQuestion] = useState(0);
     const [answer, setAnswer] = useState('');
     const [player, setPlayerData] = useState({ playerId: '', playerName: '' });
-    const [counter, setCounter] = useState(0);
+    const [counter, setCounter] = useState(60);
+    const [waitingForAnswers, setWaitingForAnswers] = useState(false);
     const [additionalTime, setAdditionalTime] = useState(false);
     const [results, setResults] = useState([]);
     const [showResults, setShowResults] = useState(false);
@@ -28,21 +29,19 @@ export default function PlayerGame({ socket }) {
 
         fetchGame();
 
-        const onTimerStartedHandler = (data) => {
+        const onTimerStateHandler = (data) => {
             console.log(E.GAME_TIMER_STATE);
 
             setCounter(data.counter);
+            setWaitingForAnswers(data.waitingForAnswers);
             setAdditionalTime(data.additionalTime);
         }
 
-        const onTimerStopHandler = () => {
-            console.log(E.GAME_TIMER_STOP);
-            socket.emit(E.GAME_TIMER_STOP);
-    
+        const onTimerStopedHandler = (data) => {
+            console.log(E.GAME_TIMER_STOPED);
+            setWaitingForAnswers(false);
             setAdditionalTime(false);
-    
-            // setTimerStarted(false);
-        };
+        }
 
         const onGameStateHandler = (data) => {
             console.log(E.GAME_TIMER_STATE);
@@ -52,6 +51,8 @@ export default function PlayerGame({ socket }) {
             setQuestion(data.currentQuestion);
             setShowResults(data.showResults);
             setResults(data.results);
+            setWaitingForAnswers(data.waitingForAnswers);
+            setAdditionalTime(data.additionalTime);
         }
 
         const onPlayerData = (data) => {
@@ -69,7 +70,8 @@ export default function PlayerGame({ socket }) {
             setShowResults(true);
         }
 
-        socket.on(E.GAME_TIMER_STATE, onTimerStartedHandler);
+        socket.on(E.GAME_TIMER_STATE, onTimerStateHandler);
+        socket.on(E.GAME_TIMER_STOPED, onTimerStopedHandler);
         socket.on(E.GAME_STATE, onGameStateHandler);
         socket.on(E.PLAYER_DATA, onPlayerData);
         socket.on(E.GAME_RESULTS, onResults);
@@ -81,7 +83,8 @@ export default function PlayerGame({ socket }) {
         });
 
         return () => {
-            socket.off(E.GAME_TIMER_STATE, onTimerStartedHandler);
+            socket.off(E.GAME_TIMER_STATE, onTimerStateHandler);
+            socket.off(E.GAME_TIMER_STOPED, onTimerStopedHandler);
             socket.off(E.GAME_STATE, onGameStateHandler);
             socket.off(E.PLAYER_DATA, onPlayerData);
             socket.off(E.GAME_RESULTS, onResults);
@@ -94,7 +97,7 @@ export default function PlayerGame({ socket }) {
 
     const onSubmitAnswerHandler = () => {
         console.log(E.PLAYER_SENT_ANSWER);
-        socket.emit(E.PLAYER_SENT_ANSWER, { answer });
+        socket.emit(E.PLAYER_SENT_ANSWER, { answer }); 
         setAnswer('');
     }
 
@@ -156,7 +159,7 @@ export default function PlayerGame({ socket }) {
                                 <div className="form-group">
                                     <textarea className="form-control" id="inputAnswer" rows="5" onChange={answerHandle} value={answer} />
                                 </div>
-                                {counter
+                                {waitingForAnswers
                                     ? <input type="button" className="btn btn-lg btn-primary btn-block" onClick={onSubmitAnswerHandler} value="Отправить" />
                                     : <input type="button" className="btn btn-lg btn-primary btn-block" onClick={onSubmitAnswerHandler} disabled value="Отправить" />
                                 }

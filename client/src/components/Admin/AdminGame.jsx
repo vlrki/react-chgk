@@ -17,7 +17,7 @@ export default function AdminGame({ socket }) {
     const [counter, setCounter] = useState(60);
     const [timerStarted, setTimerStarted] = useState(false);
     const [additionalTime, setAdditionalTime] = useState(false);
-    const [showNextButton, setShowNextButton] = useState(true);
+    const [showNextButton, setShowNextButton] = useState(false);
     const [results, setResults] = useState([]);
     const [showResults, setShowResults] = useState(false);
 
@@ -30,7 +30,7 @@ export default function AdminGame({ socket }) {
 
         fetchPlayers();
 
-        const onTimerStartedHandler = (data) => {
+        const onTimerStateHandler = (data) => {
             console.log(E.GAME_TIMER_STATE);
 
             setCounter(data.counter);
@@ -41,12 +41,11 @@ export default function AdminGame({ socket }) {
             console.log(E.GAME_TIMER_STOPED);
 
             setTimerStarted(false);
-
             setShowNextButton(true);
         }
 
         const onGameStateHandler = (data) => {
-            console.log(E.GAME_TIMER_STATE);
+            console.log(E.GAME_STATE);
             console.log(data);
 
             setRound(data.currentRound);
@@ -54,6 +53,7 @@ export default function AdminGame({ socket }) {
             setShowResults(data.showResults);
             setResults(data.results);
             setAnswers(data.answers);
+            setPlayers(data.players);
         }
 
         const onAnswers = (data) => {
@@ -68,15 +68,15 @@ export default function AdminGame({ socket }) {
             console.log(E.GAME_RESULTS);
             console.log(data);
 
-            setResults(data.results);
+            setResults(data.results); 
             setShowResults(true);
         }
 
 
         socket.on(E.ADMIN_PLAYERS_LIST, setPlayers);
-        socket.on(E.GAME_TIMER_STATE, onTimerStartedHandler);
+        socket.on(E.GAME_TIMER_STATE, onTimerStateHandler);
         socket.on(E.GAME_TIMER_STOPED, onTimerStopedHandler);
-        socket.on(E.GAME_STATE, onGameStateHandler);
+        socket.on(E.A_GAME_STATE, onGameStateHandler);
         socket.on(E.ADMIN_ANSWERS, onAnswers);
         socket.on(E.GAME_RESULTS, onResults);
 
@@ -88,7 +88,7 @@ export default function AdminGame({ socket }) {
 
         return () => {
             socket.off(E.ADMIN_PLAYERS_LIST, setPlayers);
-            socket.off(E.GAME_TIMER_STATE, onTimerStartedHandler);
+            socket.off(E.GAME_TIMER_STATE, onTimerStateHandler);
             socket.off(E.GAME_TIMER_STOPED, onTimerStopedHandler);
             socket.off(E.GAME_STATE, onGameStateHandler);
             socket.off(E.ADMIN_ANSWERS, onAnswers);
@@ -113,13 +113,13 @@ export default function AdminGame({ socket }) {
         socket.emit(E.GAME_TIMER_STOP);
 
         setAdditionalTime(false);
-
-        // setTimerStarted(false);
+        setShowNextButton(true);
     };
 
     const onNextQuestionHandler = () => {
         console.log(E.GAME_NEXT_QUESTION);
         socket.emit(E.GAME_NEXT_QUESTION);
+        setShowNextButton(false);
     }
 
     const onShowResultsHandler = () => {
@@ -127,16 +127,16 @@ export default function AdminGame({ socket }) {
         socket.emit(E.ADMIN_SHOW_RESULTS);
     }
 
-    const onAcceptHandler = (playerId) => {
+    const onAcceptHandler = (playerId, round, question) => {
         console.log('onAcceptHandler');
         console.log(playerId);
-        socket.emit(E.ADMIN_ACCEPT_ANSWER, { playerId });
+        socket.emit(E.ADMIN_ACCEPT_ANSWER, { playerId, round, question });
     }
 
-    const onRejectHandler = (playerId) => {
+    const onRejectHandler = (playerId, round, question) => {
         console.log('onRejectHandler');
         console.log(playerId);
-        socket.emit(E.ADMIN_REJECT_ANSWER, { playerId });
+        socket.emit(E.ADMIN_REJECT_ANSWER, { playerId, round, question });
 
     }
 
@@ -248,7 +248,7 @@ export default function AdminGame({ socket }) {
                                         {typeof answers[round] !== 'undefined'
                                             && typeof answers[round][question] !== 'undefined'
                                             && answers[round][question].map(function (value, index) {
-                                                if (value) return <tr>
+                                                if (value) return <tr key={round+question+value.playerId}>
                                                     <th scope="row">{value.playerId}</th>
                                                     <td>{value.playerName}</td>
                                                     <td>{value.active ? value.answer : <strike>{value.answer}</strike>}</td>
@@ -257,17 +257,17 @@ export default function AdminGame({ socket }) {
                                                         && (value.accepted == null
                                                             ? <>
                                                                 <button type="button" className="btn btn-sm btn-success"
-                                                                    onClick={() => onAcceptHandler(value.playerId)}>верно</button>&nbsp;
+                                                                    onClick={() => onAcceptHandler(value.playerId, round, question)}>верно</button>&nbsp;
                                                         <button type="button" className="btn btn-sm btn-danger"
-                                                                    onClick={() => onRejectHandler(value.playerId)}>неверно</button>
+                                                                    onClick={() => onRejectHandler(value.playerId, round, question)}>неверно</button>
                                                             </>
                                                             : (value.accepted
-                                                                ? <span class="badge badge-success">верно</span>
-                                                                : <span class="badge badge-danger">неверно</span>
+                                                                ? <span className="badge badge-success">верно</span>
+                                                                : <span className="badge badge-danger">неверно</span>
                                                             )
                                                         )
                                                     }
-                                                        {!value.active && <span class="badge badge-dark">отклонено</span>}
+                                                        {!value.active && <span className="badge badge-dark">отклонено</span>}
                                                     </td>
                                                 </tr>
                                             })}

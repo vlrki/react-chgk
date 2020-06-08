@@ -15,5 +15,11 @@
     "server": "nodemon index"
   },
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "nodemonConfig": {
+    "ignore": [
+      "data/*"
+    ],
+    "delay": "2500"
+  }
 }
