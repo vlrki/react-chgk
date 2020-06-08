@@ -23,29 +23,39 @@ let game = {
         console.log('init');
 
         this._state.answers = Array.from({ length: 3 }, (el, index) => Array.from({ length: 12 }, (el, index) => []));
-        this.loadState();
+        this.loadState(); 
     },
 
     set(key, value) {
         this._state[key] = value;
+
+        this.saveGame();
     },
 
     get(key) {
-        return this._state[key]; 
+        return this._state[key];
     },
 
     // State
     newGame() {
 
     },
+
     loadState() {
+        console.log('loading state');
+
         if (fs.existsSync(GAME_STATE_FILE)) {
             let data = fs.readFileSync(GAME_STATE_FILE);
             this._state = JSON.parse(data);
             console.log(this._state);
         }
+
+        console.log(this._state);
     },
+
     saveState() {
+        console.log('saving state');
+
         let data = JSON.stringify(this._state);
         fs.writeFileSync(GAME_STATE_FILE, data);
     },
@@ -103,22 +113,23 @@ let game = {
         } else if (state.currentQuestion == 11 && state.currentRound == 2) {
             io.emit(E.GAME_FINISHED);
         }
-        return this._state.currentQuestion++;
+        
+        this.saveState();
+
+        return this._state.currentQuestion++; 
     },
 
     // Answer
     setAnswer(data) {
-        console.log(this._state);
-        
         if (!this._state.answers[this._state.currentRound][this._state.currentQuestion][data.playerId]) {
             this._state.answers[this._state.currentRound][this._state.currentQuestion][data.playerId] = data;
-            
+
         } else {
             return false;
         }
 
-        this.saveGame();
-        
+        this.saveState();
+
         return true;
     },
 
@@ -129,16 +140,16 @@ let game = {
     acceptAnswer(playerId, round, question) {
         this._state.answers[round][question][playerId].accepted = true;
 
-        this.saveGame();
-        
+        this.saveState();
+
         return true;
     },
 
     rejectAnswer(playerId, round, question) {
         this._state.answers[round][question][playerId].accepted = false;
 
-        this.saveGame();
-        
+        this.saveState();
+
         return true;
     },
 
@@ -204,8 +215,6 @@ let game = {
                 b[player].results.total += value.results[round];
             }
         });
-
-        console.log('results', b);
 
         function compareByTotal(a, b) {
             if (a.results.total < b.results.total) {

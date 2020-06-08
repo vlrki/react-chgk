@@ -2,4 +2,4 @@
 .vscode
 node_modules
 client/src/config.js
-data/*
+server/data/*
