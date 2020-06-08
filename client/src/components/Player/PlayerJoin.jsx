@@ -3,15 +3,18 @@ import { api, instance } from '../../api';
 
 function PlayerJoin({ onJoin }) {
     const [playerId, setPlayerId] = useState('');
+    const [password, setPassword] = useState('');
 
     const onEnter = async () => {
-        if (!playerId) return;
+        if (!playerId || !password) return;
 
-        await instance.post('/join', {
-            playerId
+        let response = await instance.post('/join', {
+            playerId, password
         });
 
-        onJoin({ playerId });
+        onJoin({ token: response.data.token });
+        // return <Redirect to={"/admin/game"} push /> 
+        // onJoin({ playerId });
     }
 
     return (
@@ -31,6 +34,18 @@ function PlayerJoin({ onJoin }) {
                                 autoFocus
                                 value={playerId}
                                 onChange={(e) => setPlayerId(e.target.value)}
+                            />
+
+                            <label htmlFor="inputPassword" className="sr-only">Пароль</label>
+                            <input
+                                type="password"
+                                id="inputPassword"
+                                className="form-control mb-3"
+                                placeholder="Пароль"
+                                required
+                                autoFocus
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
                             />
 
                             <input

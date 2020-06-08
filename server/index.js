@@ -43,8 +43,11 @@ let initialState = {
     // showResults: false,
     // results: {},
     // finishDt: null,
-    counterId: null
+    counterId: null,
+    tokens: new Map(),
 };
+
+state = { ...initialState };
 
 getPlayersList = () => {
     let playersList = [];
@@ -56,8 +59,6 @@ getPlayersList = () => {
     return playersList;
 }
 
-state = { ...initialState };
-
 app.get('/', (request, response) => {
     console.log('get');
     // console.log(request);
@@ -66,13 +67,22 @@ app.get('/', (request, response) => {
 });
 
 app.post('/join', (req, res) => {
-    console.log(req.body);
-
-    const { playerId } = req.body
-
     console.log('Join');
-    res.json({
-        players: [...state.players.keys()]
+
+    const { playerId, password } = req.body;
+
+    if (U.authUser(playerId, password)) {
+        let token = crypto.randomBytes(64).toString('hex');
+
+        state.tokens.set(token, playerId);
+    
+        res.json({ 
+            token
+        });
+    }
+    
+    res.json({ 
+        error: 'Error'
     });
 });
 
@@ -140,8 +150,17 @@ io.on('connection', (socket) => {
     }
 
 
-    socket.on(E.PLAYER_JOINED, ({ playerId }) => {
+    socket.on(E.PLAYER_JOINED, ({ token }) => {
         console.log(E.PLAYER_JOINED);
+
+        if (!state.tokens.has(token)) {
+            console.log('auth error');
+            return;
+        }
+
+        let playerId = state.tokens.get(token);
+        state.tokens.delete(token);
+
         socket.join(playerId);
 
         state.players.set(socket.id, playerId);
