@@ -2,17 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { api, instance } from '../../api';
 import E from '../../events';
 import Results from '../common/Results';
-import Rounds from '../common/Rounds';
-import Questions from '../common/Questions';
+import Rounds from './Rounds';
+import Questions from './Questions';
 
 export default function AdminGame({ socket }) {
 
     const rounds = Array.from({ length: 3 }, (el, index) => index + 1);
     const questions = Array.from({ length: 12 }, (el, index) => index + 1);
 
+    const [active, setActive] = useState(true);
     const [players, setPlayers] = useState([]);
     const [round, setRound] = useState(0);
+    const [openedRound, setOpenedRound] = useState(0);
     const [question, setQuestion] = useState(0);
+    const [openedQuestion, setOpenedQuestion] = useState(0);
     const [answers, setAnswers] = useState([]);
     const [counter, setCounter] = useState(60);
     const [timerStarted, setTimerStarted] = useState(false);
@@ -48,6 +51,14 @@ export default function AdminGame({ socket }) {
             console.log(E.GAME_STATE);
             console.log(data);
 
+            if (data.currentQuestion !== question) {
+                setOpenedQuestion(data.currentQuestion);
+            }
+
+            if (data.currentRound !== round) {
+                setOpenedRound(data.currentRound);
+            }
+
             setRound(data.currentRound);
             setQuestion(data.currentQuestion);
             setShowResults(data.showResults);
@@ -68,7 +79,7 @@ export default function AdminGame({ socket }) {
             console.log(E.GAME_RESULTS);
             console.log(data);
 
-            setResults(data.results); 
+            setResults(data.results);
             setShowResults(true);
         }
 
@@ -125,6 +136,7 @@ export default function AdminGame({ socket }) {
     const onShowResultsHandler = () => {
         console.log(E.ADMIN_SHOW_RESULTS);
         socket.emit(E.ADMIN_SHOW_RESULTS);
+        setOpenedQuestion(null);
     }
 
     const onAcceptHandler = (playerId, round, question) => {
@@ -138,6 +150,17 @@ export default function AdminGame({ socket }) {
         console.log(playerId);
         socket.emit(E.ADMIN_REJECT_ANSWER, { playerId, round, question });
 
+    }
+
+    const onOpenQuestion = (id) => {
+        setOpenedQuestion(id);
+        setShowResults(false);
+    }
+
+    const onOpenRound = (id) => {
+        setOpenedRound(id);
+        setOpenedQuestion(0);
+        setShowResults(false);
     }
 
     return (
@@ -173,7 +196,12 @@ export default function AdminGame({ socket }) {
                                 <h3>Раунд:</h3>
                             </div>
                             <div className="col-md-7">
-                                <Rounds rounds={rounds} round={round} />
+                                <Rounds
+                                    rounds={rounds}
+                                    round={round}
+                                    openedRound={openedRound}
+                                    onOpenRound={onOpenRound}
+                                />
                             </div>
                             {timerStarted ||
                                 <div className="col-md-3">
@@ -198,7 +226,15 @@ export default function AdminGame({ socket }) {
                                 <h3>Вопрос:</h3>
                             </div>
                             <div className="col-md-7">
-                                <Questions questions={questions} question={question} round={round} showResults={showResults} />
+                                <Questions
+                                    questions={questions}
+                                    question={question}
+                                    round={round}
+                                    showResults={showResults}
+                                    openedQuestion={openedQuestion}
+                                    openedRound={openedRound}
+                                    onOpenQuestion={onOpenQuestion}
+                                />
                             </div>
                             <div className="col-md-3">
                                 {showNextButton && !showResults && question == 11 &&
@@ -245,10 +281,10 @@ export default function AdminGame({ socket }) {
                                     </thead>
                                     <tbody>
 
-                                        {typeof answers[round] !== 'undefined'
-                                            && typeof answers[round][question] !== 'undefined'
-                                            && answers[round][question].map(function (value, index) {
-                                                if (value) return <tr key={round+question+value.playerId}>
+                                        {typeof answers[openedRound] !== 'undefined'
+                                            && typeof answers[openedRound][openedQuestion] !== 'undefined'
+                                            && answers[openedRound][openedQuestion].map(function (value, index) {
+                                                if (value) return <tr key={openedRound + openedQuestion + value.playerId}>
                                                     <th scope="row">{value.playerId}</th>
                                                     <td>{value.playerName}</td>
                                                     <td>{value.active ? value.answer : <strike>{value.answer}</strike>}</td>
@@ -257,9 +293,9 @@ export default function AdminGame({ socket }) {
                                                         && (value.accepted == null
                                                             ? <>
                                                                 <button type="button" className="btn btn-sm btn-success"
-                                                                    onClick={() => onAcceptHandler(value.playerId, round, question)}>верно</button>&nbsp;
+                                                                    onClick={() => onAcceptHandler(value.playerId, openedRound, openedQuestion)}>верно</button>&nbsp;
                                                         <button type="button" className="btn btn-sm btn-danger"
-                                                                    onClick={() => onRejectHandler(value.playerId, round, question)}>неверно</button>
+                                                                    onClick={() => onRejectHandler(value.playerId, openedRound, openedQuestion)}>неверно</button>
                                                             </>
                                                             : (value.accepted
                                                                 ? <span className="badge badge-success">верно</span>

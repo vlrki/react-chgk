@@ -23,7 +23,7 @@ let game = {
         console.log('init');
 
         this._state.answers = Array.from({ length: 3 }, (el, index) => Array.from({ length: 12 }, (el, index) => []));
-        this.loadState(); 
+        this.loadState();
     },
 
     set(key, value) {
@@ -105,18 +105,20 @@ let game = {
 
     nextQuestion() {
         //TODO
-        if (state.currentQuestion < 11 && state.currentRound <= 2) {
+        if (this._state.currentQuestion < 11 && this._state.currentRound <= 2) {
             state.currentQuestion++;
-        } else if (state.currentQuestion == 11 && state.currentRound < 2) {
-            state.currentQuestion = 0;
-            state.currentRound++;
-        } else if (state.currentQuestion == 11 && state.currentRound == 2) {
+        } else if (this._state.currentQuestion == 11 && this._state.currentRound < 2) {
+            this._state.currentQuestion = 0;
+            this._state.currentRound++;
+        } else if (this._state.currentQuestion == 11 && this._state.currentRound == 2) {
+            this._state.active = false;
+            this._state.finishDt = new Date().toISOString().slice(0, 19).replace('T', ' ');
             io.emit(E.GAME_FINISHED);
         }
-        
+
         this.saveState();
 
-        return this._state.currentQuestion++; 
+        return;
     },
 
     // Answer
@@ -187,20 +189,22 @@ let game = {
                 value.forEach((value, playerId) => {
                     let player = U.getUser(playerId);
 
-                    a[round][question][player] = value.accepted ? 1 : 0;
+                    if (value) {
+                        a[round][question][player] = value.accepted ? 1 : 0;
 
-                    if (b[playerId] == undefined) {
-                        b[playerId] = {
-                            playerId: playerId,
-                            playerName: player.name,
-                            results: {}
+                        if (b[playerId] == undefined) {
+                            b[playerId] = {
+                                playerId: playerId,
+                                playerName: player.name,
+                                results: {}
+                            }
+                            b[playerId].results = { 0: 0, 1: 0, 2: 0, total: 0 };
+                            b[playerId].results[round] = 0;
                         }
-                        b[playerId].results = { 0: 0, 1: 0, 2: 0, total: 0 };
-                        b[playerId].results[round] = 0;
-                    }
 
-                    if (value.accepted) {
-                        b[playerId].results[round]++;
+                        if (value.accepted) {
+                            b[playerId].results[round]++;
+                        }
                     }
 
                 });

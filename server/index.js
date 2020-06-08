@@ -225,8 +225,8 @@ io.on('connection', (socket) => {
                         io.emit(E.GAME_TIMER_STATE, {
                             counter: additionalCounter,
                             waitingForAnswers: G.get('waitingForAnswers'),
-                            additionalTime: G.get('additionalTime') 
-                        }); 
+                            additionalTime: G.get('additionalTime')
+                        });
                     }
 
                     additionalCounter--;
@@ -264,23 +264,17 @@ io.on('connection', (socket) => {
     socket.on(E.GAME_NEXT_QUESTION, () => {
         console.log(E.GAME_NEXT_QUESTION);
 
-        G.set('waitingForAnswers', true);
-        G.set('showResults', false);
-
         if (socket.id != admin.socket) {
             console.log('error');
             return;
         }
 
-        //TODOacceptAnswer
-        if (G.getQuestion() < 11 && G.getRound() <= 2) {
-            G.nextQuestion();
-        } else if (G.getQuestion() == 11 && G.getRound() < 2) {
-            G.getQuestion();
-            // G.nextRound();
-        } else if (G.getQuestion() == 11 && G.getRound() == 2) {
-            io.emit(E.GAME_FINISHED);
-        }
+        G.set('waitingForAnswers', false);
+        G.set('showResults', false);
+
+        clearInterval(state.conterId);
+
+        G.nextQuestion();
 
         sendAdminGameState();
         sendPlayerGameState();
