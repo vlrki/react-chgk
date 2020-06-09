@@ -1,3 +1,8 @@
+const md5 = require('md5');
+const sql = require("./db.js");
+
+const Player = require("./models/player.model.js");
+
 let users = {
     _users: {
         1: {
@@ -37,12 +42,20 @@ let users = {
         },
     },
 
-    authUser(id, password) {
-        if (typeof this._users[id] !== 'undefined' && this._users[id].password === password) {
-            return this._users[id];
+    async authUser(playerId, password) {
+        console.log('AuthUser');
+        if (typeof this._users[playerId] !== 'undefined' && this._users[playerId].password === password) {
+            return this._users[playerId];
         }
 
-        return null;
+        const hash = md5(password);
+
+        const rows = await sql.query(`SELECT * FROM players WHERE id = '${playerIdcl}' AND md5 = '${hash}'`); 
+
+
+        console.log(rows);
+
+        return rows;
     },
 
     getUser(id) {

@@ -7,6 +7,7 @@ import { Route, withRouter, BrowserRouter, Switch, Redirect } from 'react-router
 import './App.css';
 
 import PlayerJoin from './components/Player/PlayerJoin';
+import PlayerRegister from './components/Player/PlayerRegister';
 import PlayerGame from './components/Player/PlayerGame';
 import AdminLogin from './components/Admin/AdminLogin';
 import AdminGame from './components/Admin/AdminGame';
@@ -15,7 +16,7 @@ import AdminGame from './components/Admin/AdminGame';
 import E from './events';
 import { socket, api, connectReducerToAPI } from './api';
 
-function App({history}) {
+function App({ history }) {
     const initialState = {
         isAuth: false,
         isAdmin: false,
@@ -23,7 +24,7 @@ function App({history}) {
         token: '',
 
     }
-    
+
     const [state, dispatch] = React.useReducer(reducer, initialState);
     connectReducerToAPI(dispatch);
 
@@ -32,18 +33,26 @@ function App({history}) {
         // dispatchApi({action: GAME_STARTED, payload: {gameStarted: true}})
         console.log(E.GAME_STARTED);
     });
-    
+
     socket.on(E.GAME_FINISHED, () => {
         console.log(E.GAME_FINISHED);
     });
-    
+
     socket.on(E.ADMIN_PLAYERS_LIST, (data) => {
         console.log(E.ADMIN_PLAYERS_LIST);
         console.log(data);
     });
 
-
     const onJoin = (obj) => {
+        dispatch({
+            type: IS_AUTH,
+            payload: true
+        });
+
+        socket.emit(E.PLAYER_JOINED, obj);
+    }
+
+    const onRegister = (obj) => {
         dispatch({
             type: IS_AUTH,
             payload: true
@@ -72,12 +81,20 @@ function App({history}) {
                 <Route path='/admin/game' render={() => {
                     return <>
                         {!state.isAdmin && <Redirect to='/admin' />}
-                        {state.isAdmin && <AdminGame 
+                        {state.isAdmin && <AdminGame
                             socket={socket}
                         />}
                     </>
                 }} />
                 <Route path='/admin' render={() => <AdminLogin onLogin={onLogin} />} />
+                <Route path='/register' render={() => {
+                    return <>
+                        {!state.isAuth && <PlayerRegister onRegister={onRegister} />}
+                        {state.isAuth && <PlayerGame
+                            socket={socket}
+                        />}
+                    </>
+                }} />} />
                 <Route path='/' render={() => {
                     return <>
                         {!state.isAuth && <PlayerJoin onJoin={onJoin} />}

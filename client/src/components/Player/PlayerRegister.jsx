@@ -1,20 +1,24 @@
 import React, { useState } from 'react';
 import { api, instance } from '../../api';
+import { Redirect } from 'react-router-dom';
 
-function PlayerJoin({ onJoin }) {
+function PlayerRegister({ onRegister }) {
     const [name, setName] = useState('');
+    const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [password2, setPassword2] = useState('');
     const [error, setError] = useState('');
 
     const onEnter = async () => {
         setError('');
-        if (!name || !password) {
+
+        if (!name || !password || !password2 || !email || (password !== password2)) {            
             setError('Заполните все поля');
             return;
         };
 
-        let response = await instance.post('/join', {
-            name, password
+        let response = await instance.post('/register', {
+            name, email, password
         });
 
         if (response.data.error) {
@@ -22,8 +26,8 @@ function PlayerJoin({ onJoin }) {
             return;
         }
 
-        onJoin({ token: response.data.token });
-        // return <Redirect to={"/admin/game"} push /> 
+        onRegister({ token: response.data.token });
+        // return <Redirect to={"/"} push /> 
         // onJoin({ playerId });
     }
 
@@ -33,7 +37,7 @@ function PlayerJoin({ onJoin }) {
                 <div className="row">
                     <div className="col-md-12">
                         <form className="form-signin">
-                            <h1 className="h3 mb-3 font-weight-normal text-center">Вход в игру</h1>
+                            <h1 className="h3 mb-3 font-weight-normal text-center">Регистрация команды</h1>
                             <label htmlFor="inputTeam" className="sr-only">Название команды</label>
                             <input
                                 type="text"
@@ -44,6 +48,18 @@ function PlayerJoin({ onJoin }) {
                                 autoFocus
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
+                            />
+
+                            <label htmlFor="inputTeam" className="sr-only">E-mail</label>
+                            <input
+                                type="email"
+                                id="inputTeam"
+                                className="form-control mb-3"
+                                placeholder="E-mail"
+                                required
+                                autoFocus
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
                             />
 
                             <label htmlFor="inputPassword" className="sr-only">Пароль</label>
@@ -58,6 +74,18 @@ function PlayerJoin({ onJoin }) {
                                 onChange={(e) => setPassword(e.target.value)}
                             />
 
+                            <label htmlFor="inputPassword2" className="sr-only">Пароль</label>
+                            <input
+                                type="password"
+                                id="inputPassword2"
+                                className="form-control mb-3"
+                                placeholder="Повторите пароль"
+                                required
+                                autoFocus
+                                value={password2}
+                                onChange={(e) => setPassword2(e.target.value)}
+                            />
+
                             {error &&
                                 <div class="alert alert-danger" role="alert">
                                     {error}
@@ -68,12 +96,12 @@ function PlayerJoin({ onJoin }) {
                                 type="button"
                                 className="btn btn-lg btn-primary btn-block"
                                 onClick={onEnter}
-                                value="Войти"
+                                value="Зарегистрироваться"
                             />
-
-                            <p className="mt-5 mb-3 text-muted center"><a href="/register">Зарегистрироваться</a></p>
-                            {/* <p className="mt-5 mb-3 text-muted">&copy; 2017-2020</p> */}
-
+                            <p className="mt-5 mb-3 center"><a href="/">Войти</a></p>
+                            {/*
+                            <p className="mt-5 mb-3 text-muted">&copy; 2017-2020</p>
+                            */}
                         </form>
 
                     </div>
@@ -84,4 +112,4 @@ function PlayerJoin({ onJoin }) {
     )
 }
 
-export default PlayerJoin;
+export default PlayerRegister;

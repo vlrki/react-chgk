@@ -3,11 +3,15 @@ const app = express();
 const server = require('http').Server(app);
 const io = require('socket.io')(server);
 const crypto = require('crypto');
+const md5 = require('md5');
 
 const E = require('../client/src/events');
 const C = require('./config');
 const G = require('./game');
 const U = require('./users');
+
+// const Players = require('./controllers/players.controller');
+const Player = require('./models/player.model');
 
 G.init();
 
@@ -69,20 +73,61 @@ app.get('/', (request, response) => {
 app.post('/join', (req, res) => {
     console.log('Join');
 
-    const { playerId, password } = req.body;
+    const { name, password } = req.body;
 
-    if (U.authUser(playerId, password)) {
-        let token = crypto.randomBytes(64).toString('hex');
 
-        state.tokens.set(token, playerId);
-    
-        res.json({ 
-            token
-        });
-    }
-    
-    res.json({ 
-        error: 'Error'
+    Player.findByNameAndPassword(name, password, (err, data) => {
+        if (err) {
+            if (err.kind === "not_found") {
+                res.json({
+                    error: `Не найдена команда с именем ${name}`
+                });
+            } else {
+                res.json({
+                    error: "Произошла ошибка при попыдке входа под именем " + name
+                });
+            }
+        } else {
+            let token = crypto.randomBytes(64).toString('hex');
+
+            state.tokens.set(token, data.id);
+
+            res.json({
+                token
+            });
+
+        }
+    });
+});
+
+app.post('/register', (req, res) => {
+    console.log('Join');
+
+    const { name, email, password } = req.body;
+
+    const player = new Player({
+        email: email,
+        name: name,
+        password: md5(password),
+        active: 1
+    });
+
+    Player.create(player, (err, data) => {
+        if (err) {
+            console.log(err);
+            res.json({
+                error: err.sqlMessage
+            });
+        } else {
+
+            let token = crypto.randomBytes(64).toString('hex');
+
+            state.tokens.set(token, data.id);
+
+            res.json({
+                token
+            });
+        }
     });
 });
 
@@ -165,15 +210,27 @@ io.on('connection', (socket) => {
 
         state.players.set(socket.id, playerId);
 
-        let player = U.getUser(playerId);
+        Player.findById(playerId, (err, data) => {
+            if (err) {
+                if (err.kind === "not_found") {
+                    res.status(404).send({
+                        message: `Not found Player with id ${playerId}.`
+                    });
+                } else {
+                    res.status(500).send({
+                        message: "Error retrieving Player with id " + playerId
+                    });
+                }
+            } else {
+                io.to(socket.id).emit(E.PLAYER_DATA, {
+                    playerId,
+                    playerName: data.name
+                });
 
-        io.to(socket.id).emit(E.PLAYER_DATA, {
-            playerId,
-            playerName: player.name
+                sendPlayerGameState()
+                sendAdminGameState();
+            }
         });
-
-        sendPlayerGameState()
-        sendAdminGameState();
     });
 
     socket.on(E.ADMIN_AUTH, ({ token }) => {
