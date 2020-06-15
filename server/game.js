@@ -203,15 +203,13 @@ let game = {
                 a[round][question] = [];
 
                 value.forEach((value, playerId) => {
-                    let player = U.getUser(playerId);
-
                     if (value) {
-                        a[round][question][player] = value.accepted ? 1 : 0;
+                        a[round][question][playerId] = value.accepted ? 1 : 0;
 
                         if (b[playerId] == undefined) {
                             b[playerId] = {
                                 playerId: playerId,
-                                playerName: player.name,
+                                playerName: value.playerName,
                                 results: {}
                             }
                             b[playerId].results = { 0: 0, 1: 0, 2: 0, total: 0 };
@@ -222,7 +220,6 @@ let game = {
                             b[playerId].results[round]++;
                         }
                     }
-
                 });
             });
         });
