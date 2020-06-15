@@ -41,6 +41,44 @@ Player.findById = (playerId, result) => {
     });
 };
 
+Player.findByIds = (playerIds, result) => {
+
+    let ids = playerIds.join(' ,');
+
+    sql.query(`SELECT * FROM players WHERE id IN (${ids})`, (err, res) => {
+        if (err) {
+            console.log("error: ", err);
+            result(err, null);
+            return;
+        } 
+
+        if (res.length) {
+            console.log("found player: ", res[0]);
+            result(null, res);
+            return;
+        }
+
+        // not found Player with the id
+        result({ kind: "not_found" }, null);
+    });
+};
+
+Player.findByIdAs = async (playerId) => {
+    returnsql.query(`SELECT * FROM players WHERE id = ${playerId}`, (err, res) => {
+        console.log('res'); 
+        console.log(res[0].name); 
+        if (err) {
+            return null;
+        }
+
+        if (res.length) {
+            return res[0];
+        }
+        
+        return null;
+    });
+};
+
 Player.findByIdAndPassword = (playerId, password, result) => {
     let hash = md5(password);
 

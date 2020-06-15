@@ -54,13 +54,30 @@ let initialState = {
 state = { ...initialState };
 
 getPlayersList = () => {
-    let playersList = [];
+    return new Promise((resolve, reject) => {
 
-    state.players.forEach(function (value, key, map) {
-        playersList.push({ id: value, name: U.getUser(value).name });
+        let ids = [];
+
+        state.players.forEach(function (value, key, map) {
+            ids.push(value);
+        });
+
+        if (ids.length) {
+            Player.findByIds(ids, (err, resp) => {
+                console.log('promise');
+                console.log(resp);
+                console.log(resp[0].name);
+
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(resp);
+                }
+            });
+        } else {
+            resolve([]);
+        }
     });
-
-    return playersList;
 }
 
 app.get('/', (request, response) => {
@@ -154,28 +171,28 @@ app.post('/admin/players', (req, res) => {
 
     const { login, password } = req.body
 
-    res.json({
-        players: getPlayersList()
+    getPlayersList().then((players) => {
+        res.json({
+            players: players
+        });
     });
+
 });
 
 io.on('connection', (socket) => {
 
     const sendAdminGameState = () => {
         console.log('sendAdminGameState');
-        console.log({
-            ...G.getAdminState(),
-            waitingForAnswers: state.waitingForAnswers,
-            additionalTime: state.additionalTime,
-            players: getPlayersList()
+
+        getPlayersList().then((players) => {
+            io.to(admin.socket).emit(E.A_GAME_STATE, {
+                ...G.getAdminState(),
+                waitingForAnswers: state.waitingForAnswers,
+                additionalTime: state.additionalTime,
+                players: players
+            });
         });
 
-        io.to(admin.socket).emit(E.A_GAME_STATE, {
-            ...G.getAdminState(),
-            waitingForAnswers: state.waitingForAnswers,
-            additionalTime: state.additionalTime,
-            players: getPlayersList()
-        });
     }
 
     const sendAdminAnswers = () => {
@@ -254,15 +271,17 @@ io.on('connection', (socket) => {
             return;
         }
 
+        clearInterval(state.conterId);
+
         G.newGame();
 
         state = {
-            waitingForAnswers: true,
+            waitingForAnswers: false,
             additionalTime: false,
-            counterId: null
+            counterId: null,
+            tokens: state.tokens,
+            players: state.players,
         };
-        
-        state.players = new Map(),
 
         io.emit(E.GAME_STARTED);
 
@@ -385,22 +404,24 @@ io.on('connection', (socket) => {
         console.log(E.PLAYER_SENT_ANSWER);
 
         let playerId = state.players.get(socket.id);
-        let player = U.getUser(playerId);
-        let dt = new Date().toISOString().slice(0, 19).replace('T', ' ');
-        let active = G.get('waitingForAnswers');
 
-        if (!G.setAnswer({
-            playerId,
-            playerName: player.name,
-            answer,
-            dt,
-            active,
-            accepted: null
-        })) {
-            //TODO: сообщение: Ответ уже получен
-        }
+        Player.findById(playerId, (err, resp) => {
+            let dt = new Date().toISOString().slice(0, 19).replace('T', ' ');
+            let active = G.get('waitingForAnswers');
 
-        sendAdminGameState();
+            if (!G.setAnswer({
+                playerId,
+                playerName: resp.name,
+                answer,
+                dt,
+                active,
+                accepted: null
+            })) {
+                //TODO: сообщение: Ответ уже получен
+            }
+
+            sendAdminGameState();
+        });
     });
 
     socket.on(E.ADMIN_ACCEPT_ANSWER, ({ playerId, round, question }) => {
@@ -426,7 +447,9 @@ io.on('connection', (socket) => {
             state.players.delete(socket.id);
         }
 
-        io.to(admin.socket).emit(E.ADMIN_PLAYERS_LIST, getPlayersList());
+        getPlayersList().then((players) => {
+            io.to(admin.socket).emit(E.ADMIN_PLAYERS_LIST, players);
+        });
 
         io.emit('user disconnected');
     }

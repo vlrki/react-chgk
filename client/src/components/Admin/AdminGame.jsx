@@ -48,7 +48,7 @@ export default function AdminGame({ socket }) {
         }
 
         const onGameStateHandler = (data) => {
-            console.log(E.GAME_STATE);
+            console.log(E.A_GAME_STATE);
             console.log(data);
 
             if (data.currentQuestion !== question) {
@@ -101,7 +101,7 @@ export default function AdminGame({ socket }) {
             socket.off(E.ADMIN_PLAYERS_LIST, setPlayers);
             socket.off(E.GAME_TIMER_STATE, onTimerStateHandler);
             socket.off(E.GAME_TIMER_STOPED, onTimerStopedHandler);
-            socket.off(E.GAME_STATE, onGameStateHandler);
+            socket.off(E.A_GAME_STATE, onGameStateHandler);
             socket.off(E.ADMIN_ANSWERS, onAnswers);
             socket.off(E.GAME_RESULTS, onResults);
         }
@@ -109,6 +109,10 @@ export default function AdminGame({ socket }) {
 
     const onGameStartHandler = () => {
         console.log(E.GAME_START);
+        setOpenedRound(0);
+        setOpenedQuestion(0);
+        setTimerStarted(false);
+        setShowNextButton(false);
         socket.emit(E.GAME_START);
     };
 
