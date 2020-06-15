@@ -254,17 +254,20 @@ io.on('connection', (socket) => {
             return;
         }
 
-        G.init();
+        G.newGame();
 
         state = {
             waitingForAnswers: true,
             additionalTime: false,
             counterId: null
         };
+        
+        state.players = new Map(),
 
         io.emit(E.GAME_STARTED);
 
         sendPlayerGameState();
+        sendAdminGameState();
     });
 
     socket.on(E.GAME_TIMER_START, () => {

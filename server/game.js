@@ -38,7 +38,23 @@ let game = {
 
     // State
     newGame() {
+        this._state = {
+            active: false,
+            // players: [],
+            currentRound: 0,
+            currentQuestion: 0,
+            // waitingForAnswers: true,
+            // additionalTime: false,
+            answers: [],
+            showResults: false,
+            results: {},
+            finishDt: null,
+            // counterId: null
+        },
 
+        this._state.answers = Array.from({ length: 3 }, (el, index) => Array.from({ length: 12 }, (el, index) => []));
+
+        this.saveState();
     },
 
     loadState() {
