@@ -294,20 +294,15 @@ export default function AdminGame({ socket }) {
                                                     <td>{value.playerName}</td>
                                                     <td>{value.active ? value.answer : <strike>{value.answer}</strike>}</td>
                                                     <td>{value.dt}</td>
-                                                    <td>{value.active
-                                                        && (value.accepted == null
-                                                            ? <>
-                                                                <button type="button" className="btn btn-sm btn-success"
+                                                    <td>
+                                                        {value.active
+                                                            && <div class="btn-group" role="group" aria-label="Оценка">
+                                                                <button type="button" className={value.accepted ? "btn btn-sm btn-success" : "btn btn-sm btn-secondary"}
                                                                     onClick={() => onAcceptHandler(value.playerId, openedRound, openedQuestion)}>верно</button>&nbsp;
-                                                        <button type="button" className="btn btn-sm btn-danger"
+                                                                <button type="button" className={(value.accepted !== null && !value.accepted) ? "btn btn-sm btn-danger" : "btn btn-sm btn-secondary"}
                                                                     onClick={() => onRejectHandler(value.playerId, openedRound, openedQuestion)}>неверно</button>
-                                                            </>
-                                                            : (value.accepted
-                                                                ? <span className="badge badge-success">верно</span>
-                                                                : <span className="badge badge-danger">неверно</span>
-                                                            )
-                                                        )
-                                                    }
+                                                            </div>
+                                                        }
                                                         {!value.active && <span className="badge badge-dark">отклонено</span>}
                                                     </td>
                                                 </tr>
