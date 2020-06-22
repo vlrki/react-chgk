@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function Questions({ round, questions, question, showResults, openedRound, openedQuestion, onOpenQuestion }) {
+export default function Questions({ round, questions, question, showResults, openedRound, openedQuestion, onOpenQuestion, onOpenResults, openedResults }) {
 
     return (
         <nav aria-label="Page navigation example">
@@ -18,9 +18,12 @@ export default function Questions({ round, questions, question, showResults, ope
                 })}
                 {showResults
                     ? <li className="page-item active" key='results'><a className="page-link" href="#">Результаты</a></li>
-                    : <li className={"page-item" + (openedRound < round ? "" : " disabled")} key='results'><a className="page-link" href="#">Результаты</a></li>
+                    : <li className="page-item disabled" key='results'><a className="page-link" href="#">Результаты</a></li>
                 }
+            </ul>
 
+            <ul className="pagination">
+                <li className={openedResults ? "page-item opened" : "page-item"} key='results'><a className="page-link" href="#" onClick={() => onOpenResults()}>Предпросмотр результатов</a></li>
             </ul>
         </nav>
     )

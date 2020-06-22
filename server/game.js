@@ -52,7 +52,7 @@ let game = {
             // counterId: null
         },
 
-        this._state.answers = Array.from({ length: 3 }, (el, index) => Array.from({ length: 12 }, (el, index) => []));
+            this._state.answers = Array.from({ length: 3 }, (el, index) => Array.from({ length: 12 }, (el, index) => []));
 
         this.saveState();
     },
@@ -204,7 +204,7 @@ let game = {
 
                 value.forEach((value, playerId) => {
                     if (value) {
-                        a[round][question][playerId] = value.accepted ? 1 : 0;
+                        a[round][question][playerId] = value.accepted ? 1 : null;
 
                         if (b[playerId] == undefined) {
                             b[playerId] = {
@@ -212,13 +212,29 @@ let game = {
                                 playerName: value.playerName,
                                 results: {}
                             }
-                            b[playerId].results = { 0: 0, 1: 0, 2: 0, total: 0 };
-                            b[playerId].results[round] = 0;
+
+                            b[playerId].results = { 0: {}, 1: {}, 2: {}, total: 0 };
+
+                            for (let i = 0; i < 3; i++) {
+                                for (let j = 0; j < 12; j++) {
+                                    if (i < this._state.currentRound
+                                        || i == this._state.currentRound && j <= this._state.currentQuestion
+                                    ) {
+                                        b[playerId].results[i][j] = 0;
+                                    } else {
+                                        b[playerId].results[i][j] = null;
+                                    }
+                                }
+
+                                b[playerId].results[i].total = 0;
+                            }
                         }
 
                         if (value.accepted) {
-                            b[playerId].results[round]++;
-                        }
+                            b[playerId].results[round][question] = 1;
+                            b[playerId].results[round].total++;
+                            b[playerId].results.total++;
+                        } 
                     }
                 });
             });
@@ -229,7 +245,17 @@ let game = {
                 if (round == 'total' || round > state.currentRound)
                     return;
 
-                b[player].results.total += value.results[round];
+                b[player].results[round] = value.results[round];
+
+                b[player].results.total += value.results[round].total;
+
+                if (round == 1) {
+                    b[player].results[1].total += b[player].results[0].total;
+                }
+
+                if (round == 2) {
+                    b[player].results[2].total += b[player].results[1].total;
+                }
             }
         });
 

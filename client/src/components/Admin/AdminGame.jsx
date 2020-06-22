@@ -16,6 +16,7 @@ export default function AdminGame({ socket }) {
     const [openedRound, setOpenedRound] = useState(0);
     const [question, setQuestion] = useState(0);
     const [openedQuestion, setOpenedQuestion] = useState(0);
+    const [openedResults, setOpenedResults] = useState(false);
     const [answers, setAnswers] = useState([]);
     const [counter, setCounter] = useState(60);
     const [timerStarted, setTimerStarted] = useState(false);
@@ -70,10 +71,9 @@ export default function AdminGame({ socket }) {
 
         const onAnswers = (data) => {
             console.log(E.ADMIN_ANSWERS);
-            console.log(data);
 
             setAnswers(data.answers);
-            console.log(data.answers);
+            setResults(data.results);
         }
 
         const onResults = (data) => {
@@ -160,12 +160,18 @@ export default function AdminGame({ socket }) {
     const onOpenQuestion = (id) => {
         setOpenedQuestion(id);
         setShowResults(false);
+        setOpenedResults(false);
     }
 
     const onOpenRound = (id) => {
         setOpenedRound(id);
         setOpenedQuestion(0);
         setShowResults(false);
+        setOpenedResults(false);
+    }
+
+    const onOpenResults = () => {
+        setOpenedResults(!openedResults);
     }
 
     return (
@@ -239,6 +245,8 @@ export default function AdminGame({ socket }) {
                                     openedQuestion={openedQuestion}
                                     openedRound={openedRound}
                                     onOpenQuestion={onOpenQuestion}
+                                    onOpenResults={onOpenResults}
+                                    openedResults={openedResults}
                                 />
                             </div>
                             <div className="col-md-3">
@@ -268,9 +276,9 @@ export default function AdminGame({ socket }) {
                     <div className="col-md-12">
 
 
-                        {showResults && <Results results={results} round={round} />}
+                        {(showResults || openedResults) && <Results results={results} round={round} />}
 
-                        {!showResults &&
+                        {(!showResults && !openedResults) &&
                             <>
                                 <h2>Ответы:</h2>
 
@@ -298,7 +306,7 @@ export default function AdminGame({ socket }) {
                                                         {value.active
                                                             && <div class="btn-group" role="group" aria-label="Оценка">
                                                                 <button type="button" className={value.accepted ? "btn btn-sm btn-success" : "btn btn-sm btn-secondary"}
-                                                                    onClick={() => onAcceptHandler(value.playerId, openedRound, openedQuestion)}>верно</button>&nbsp;
+                                                                    onClick={() => onAcceptHandler(value.playerId, openedRound, openedQuestion)}>верно</button>
                                                                 <button type="button" className={(value.accepted !== null && !value.accepted) ? "btn btn-sm btn-danger" : "btn btn-sm btn-secondary"}
                                                                     onClick={() => onRejectHandler(value.playerId, openedRound, openedQuestion)}>неверно</button>
                                                             </div>

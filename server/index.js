@@ -113,11 +113,11 @@ app.post('/join', (req, res) => {
                 token
             });
 
-        }
+        } 
     });
 });
 
-app.post('/register', (req, res) => {
+app.post('/register', (req, res) => { 
     console.log('Join');
 
     const { name, email, password } = req.body;
@@ -189,7 +189,8 @@ io.on('connection', (socket) => {
                 ...G.getAdminState(),
                 waitingForAnswers: state.waitingForAnswers,
                 additionalTime: state.additionalTime,
-                players: players
+                players: players,
+                results: G.getResults()
             });
         });
 
@@ -197,7 +198,8 @@ io.on('connection', (socket) => {
 
     const sendAdminAnswers = () => {
         io.to(admin.socket).emit(E.ADMIN_ANSWERS, {
-            answers: G.getAnswers()
+            answers: G.getAnswers(),
+            results: G.getResults()
         });
     }
 
