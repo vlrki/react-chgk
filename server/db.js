@@ -2,17 +2,18 @@ const mysql = require("mysql");
 const config = require("./config.js");
 
 // Create a connection to the database
-const connection = mysql.createConnection({
+const pool = mysql.createPool({
+    connectionLimit: 5,
     host: config.HOST,
     user: config.USER,
     password: config.PASSWORD,
     database: config.DB
 });
 
-// open the MySQL connection
-connection.connect(error => {
-    if (error) throw error;
-    console.log("Successfully connected to the database.");
+pool.getConnection(function (err, connection) {
+    if (err) {
+        console.log(err);
+    }
 });
 
-module.exports = connection;
+module.exports = pool;
