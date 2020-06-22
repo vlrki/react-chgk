@@ -41,6 +41,7 @@ export default function PlayerGame({ socket }) {
             console.log(E.GAME_TIMER_STOPED);
             setWaitingForAnswers(false);
             setAdditionalTime(false);
+            setCounter(0);
         }
 
         const onGameStateHandler = (data) => {

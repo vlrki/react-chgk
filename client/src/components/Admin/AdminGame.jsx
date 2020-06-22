@@ -45,6 +45,7 @@ export default function AdminGame({ socket }) {
 
             setTimerStarted(false);
             setShowNextButton(true);
+            setCounter(0);
         }
 
         const onGameStateHandler = (data) => {

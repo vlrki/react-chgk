@@ -318,6 +318,9 @@ io.on('connection', (socket) => {
                         G.set('waitingForAnswers', false);
                         G.set('additionalTime', false);
 
+                        counter = 0;
+                        additionalCounter = 0;
+
                         io.emit(E.GAME_TIMER_STOPED);
                     } else {
                         io.emit(E.GAME_TIMER_STATE, {
