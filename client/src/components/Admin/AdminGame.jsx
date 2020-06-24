@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { SERVER_URL } from '../../config';
 import { api, instance } from '../../api';
 import E from '../../events';
 import Results from '../common/Results';
@@ -263,6 +264,11 @@ export default function AdminGame({ socket }) {
                                         className="btn btn-block btn-secondary pull-right"
                                         onClick={onNextQuestionHandler}
                                     >Следующий вопрос</button>
+                                }
+                                {(showNextButton && showResults && round == 2 && question == 11) &&
+                                    <a href={SERVER_URL + '/admin/results'} target='_blank' 
+                                        className="btn btn-block btn-danger pull-right"
+                                    >Скачать результаты игры</a>
                                 }
                             </div>
                         </div>

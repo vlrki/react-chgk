@@ -87,6 +87,57 @@ app.get('/', (request, response) => {
     res.send('Response');
 });
 
+app.get('/admin/results', (request, response) => {
+    response.setHeader('Content-Type', 'text/csv');
+    response.setHeader('Content-Disposition', 'attachment;filename=results.csv');
+
+    let results = G.getResults();
+
+    let s = '';
+
+    [0, 1, 2].map((rnd, roundIndex) => {
+        s += 'Раунд ' + (rnd + 1) + "\n";
+
+        let header = ['#', 'Команда'];
+
+        for (let i = 0; i < 12; i++) {
+            header.push((rnd * 12 + i + 1));
+        }
+
+
+        header.push('Итого');
+
+        s += header.join("\t");
+        s += "\n";
+
+
+        results.map((player, playerIndex) => {
+            if (!player)
+                return;
+
+            let row = [];
+
+            row.push(player.playerId);
+            row.push(player.playerName);
+
+            Object.keys(player.results[rnd]).map((question, questionId) => {
+                if (question == 'total')
+                    return;
+                row.push(player.results[rnd][question] === null ? '-' : player.results[rnd][question]);
+            });
+
+            row.push(player.results[rnd].total);
+
+            s += row.join("\t");
+            s += "\n";
+        });
+
+        s += "\n\n";
+    });
+
+    response.send(s);
+});
+
 app.post('/join', (req, res) => {
     console.log('Join');
 
@@ -113,11 +164,11 @@ app.post('/join', (req, res) => {
                 token
             });
 
-        } 
+        }
     });
 });
 
-app.post('/register', (req, res) => { 
+app.post('/register', (req, res) => {
     console.log('Join');
 
     const { name, email, password } = req.body;
@@ -403,6 +454,18 @@ io.on('connection', (socket) => {
 
         state.waitingForAnswers = false;
         socket.broadcast.emit(E.GAME_STARTED)
+    });
+
+    socket.on(E.ADMIN_DOWNLOAD_RESULTS, () => {
+        console.log(E.ADMIN_DOWNLOAD_RESULTS);
+
+        if (socket.id != admin.socket) {
+            console.log('error');
+            return;
+        }
+
+        let results = G.getResults;
+
     });
 
     socket.on(E.PLAYER_SENT_ANSWER, ({ answer }) => {
